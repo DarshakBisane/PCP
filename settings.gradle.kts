@@ -24,4 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "PCP Solver"
 
-include(":app")
+include(":app", ":desktopApp")
