@@ -25,7 +25,7 @@ jobs:
         with:
           gradle-version: "8.14.3"
       - name: Build Windows EXE installer
-        run: gradle --no-daemon --stacktrace --info :desktopApp:packageExe
+        run: gradle --no-daemon --stacktrace --info -p desktopApp packageExe
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
