@@ -4,11 +4,6 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-repositories {
-    google()
-    mavenCentral()
-    gradlePluginPortal()
-}
 
 dependencies {
     implementation(compose.desktop.currentOs)
