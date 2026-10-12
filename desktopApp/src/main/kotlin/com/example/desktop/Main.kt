@@ -212,7 +212,7 @@ fun MainScreen() {
                                         currentTop = currentTop,
                                         currentBottom = currentBottom,
                                         result = result,
-                                        onPause = { paused = !paused; status = if (!paused) "Search paused" else "Searching candidate sequences…" }
+                                        onPause = { val nextPaused = !paused; paused = nextPaused; status = if (nextPaused) "Search paused" else "Searching candidate sequences…" }
                                     )
                                     TipCard()
                                 }
