@@ -1,5 +1,17 @@
 package com.example.desktop
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -108,7 +120,16 @@ fun MainScreen() {
                 Column(Modifier.widthIn(max = 1120.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                     HeaderCard(tab = tab, onTabChange = { tab = it })
 
-                    when (tab) {
+                    AnimatedContent(
+                        targetState = tab,
+                        label = "main-page-transition",
+                        transitionSpec = {
+                            (fadeIn(tween(240, easing = FastOutSlowInEasing)) +
+                                slideInVertically(tween(240, easing = FastOutSlowInEasing)) { it / 14 }) togetherWith
+                                (fadeOut(tween(150)) + slideOutVertically(tween(150)) { -it / 24 })
+                        }
+                    ) { activeTab ->
+                    when (activeTab) {
                         0 -> {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -221,6 +242,7 @@ fun MainScreen() {
                         1 -> HowItWorksPage()
                         else -> ComplexityPage()
                     }
+                    }
                     Text(
                         "PCP Solver  •  Interactive PCP Visual Solver & Explorer  •  Darshak K. Bisane / CM25D004",
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
@@ -279,12 +301,12 @@ private fun HeaderCard(tab: Int, onTabChange: (Int) -> Unit) {
 @Composable
 private fun SectionCard(title: String, subtitle: String? = null, trailing: (@Composable () -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().animateContentSize(tween(220, easing = FastOutSlowInEasing)),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
         border = androidx.compose.foundation.BorderStroke(1.dp, Border)
     ) {
-        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxWidth().animateContentSize(tween(220, easing = FastOutSlowInEasing)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(title, color = Dark, fontSize = 17.sp, fontWeight = FontWeight.Bold)
@@ -404,25 +426,53 @@ private fun SearchVisualization(
             Text(if (result != null) "SOLVED" else if (running && paused) "PAUSED" else if (running) "RUNNING" else "READY", color = if (result != null) Green else Brown, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
         }
     }) {
-        Text(status, color = if (result != null) Green else Dark, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        val statusColor by animateColorAsState(
+            targetValue = if (result != null) Green else if (running && paused) Brown else Dark,
+            animationSpec = tween(260, easing = FastOutSlowInEasing),
+            label = "status-color"
+        )
+        Text(status, color = statusColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
             MetricBox("Sequences checked", NumberFormat.getNumberInstance(Locale.US).format(checked), Modifier.weight(1f))
             MetricBox("Depth limit", depth.toString(), Modifier.weight(1f))
         }
-        if (running) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Orange, trackColor = SoftOrange)
+        AnimatedVisibility(
+            visible = running,
+            enter = fadeIn(tween(180)) + slideInVertically(tween(180)) { -it / 4 },
+            exit = fadeOut(tween(140))
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val pulse by animateFloatAsState(
+                targetValue = if (paused) 0.28f else 1f,
+                animationSpec = tween(350, easing = FastOutSlowInEasing),
+                label = "search-progress-emphasis"
+            )
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = Orange.copy(alpha = pulse),
+                trackColor = SoftOrange
+            )
             OutlinedButton(onClick = onPause, shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 7.dp)) {
                 Text(if (paused) "▶  Resume search" else "Ⅱ  Pause search")
             }
+            }
         }
         Text("CURRENT CANDIDATE", color = Brown, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        AnimatedContent(
+            targetState = currentSequence,
+            label = "candidate-sequence-transition",
+            transitionSpec = {
+                (fadeIn(tween(130)) + slideInVertically(tween(130)) { it / 5 }) togetherWith fadeOut(tween(90))
+            }
+        ) { sequence ->
         Box(Modifier.fillMaxWidth().background(Cream, RoundedCornerShape(10.dp)).border(1.dp, Border, RoundedCornerShape(10.dp)).padding(14.dp)) {
             Text(
-                if (currentSequence.isEmpty()) "Waiting for the first sequence…" else currentSequence.joinToString("  →  ") { "T$it" },
+                if (sequence.isEmpty()) "Waiting for the first sequence…" else sequence.joinToString("  →  ") { "T$it" },
                 color = Dark, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 15.sp
             )
         }
-        Column(Modifier.fillMaxWidth().background(Cream, RoundedCornerShape(10.dp)).padding(13.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+        }
+        Column(Modifier.fillMaxWidth().animateContentSize(tween(180)).background(Cream, RoundedCornerShape(10.dp)).padding(13.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Text("A", color = Brown, fontWeight = FontWeight.ExtraBold, modifier = Modifier.width(24.dp))
                 Text(currentTop.ifEmpty { "Top concatenation appears here" }, color = Dark, fontFamily = FontFamily.Monospace, fontSize = 13.sp)
@@ -433,8 +483,13 @@ private fun SearchVisualization(
                 Text(currentBottom.ifEmpty { "Bottom concatenation appears here" }, color = Dark, fontFamily = FontFamily.Monospace, fontSize = 13.sp)
             }
         }
+        AnimatedVisibility(
+            visible = result != null,
+            enter = fadeIn(tween(260)) + slideInVertically(tween(260)) { it / 5 },
+            exit = fadeOut(tween(150))
+        ) {
         if (result != null) {
-            Column(Modifier.fillMaxWidth().background(GreenSoft, RoundedCornerShape(10.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Column(Modifier.fillMaxWidth().animateContentSize(tween(220)).background(GreenSoft, RoundedCornerShape(10.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Text("✓  Matching sequence found", color = Green, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Text("Index sequence: [${result.sequence.joinToString(", ")}]", color = Dark, fontWeight = FontWeight.SemiBold)
                 Text("A = ${result.top}", color = Dark, fontFamily = FontFamily.Monospace)
@@ -443,6 +498,7 @@ private fun SearchVisualization(
             }
         } else if (!running && checked > 0) {
             Text("No matching sequence was found within the selected depth.", color = Muted, fontSize = 12.sp, lineHeight = 17.sp)
+        }
         }
     }
 }
