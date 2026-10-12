@@ -484,7 +484,7 @@ private fun SearchVisualization(
             }
         }
         AnimatedVisibility(
-            visible = result != null,
+            visible = result != null || (!running && checked > 0),
             enter = fadeIn(tween(260)) + slideInVertically(tween(260)) { it / 5 },
             exit = fadeOut(tween(150))
         ) {
